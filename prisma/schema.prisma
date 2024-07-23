@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  CANCELLED
+}
+
+enum PlanName {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum PaymentMethod {
+  CARD
+  PAYPAL
+  UPI
+}
+
+model User {
+  id                 Int                 @id @default(autoincrement())
+  email              String              @unique
+  firstName          String
+  lastName           String?
+  profilePicUrl      String?
+  subscriptionStatus SubscriptionStatus? @default(INACTIVE)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  subscriptions Subscription[]
+  payments      Payment[]
+
+  Transcription Transcriptions[]
+}
+
+model Plan {
+  id        Int      @id @default(autoincrement())
+  name      PlanName @unique
+  price     Int
+  credits   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id            Int                @id @default(autoincrement())
+  userId        Int
+  planId        Int
+  status        SubscriptionStatus
+  paymentMethod PaymentMethod
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  user          User               @relation(fields: [userId], references: [id])
+  plan          Plan               @relation(fields: [planId], references: [id])
+
+  payments Payment[]
+}
+
+model Payment {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  subscriptionId Int
+  amount         Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id])
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+model Transcriptions {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  audioUrl    String?
+  textFileUrl String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+}
