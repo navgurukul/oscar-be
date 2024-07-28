@@ -1,10 +1,18 @@
-import {
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { DatabaseService } from "src/database/database.service";
+import { v4 as uuidv4 } from "uuid"; // For generating unique file names
+import { config } from "dotenv";
+config();
+
+import AWS from "aws-sdk";
+
+const S3Bucket = new AWS.S3({
+  accessKeyId: process.env.ACCESS_KEY_ID,
+  secretAccessKey: process.env.SECRET_ACCESS_KEY,
+  // BucketName: process.env.S3_BUCKET,
+});
 
 @Injectable()
 export class TranscriptionsService {
@@ -87,6 +95,31 @@ export class TranscriptionsService {
         throw new NotFoundException(`Transcription with ID ${id} not found`);
       }
       throw error; // Rethrow any other errors
+    }
+  }
+
+  async fileUpload(file) {
+    const s3 = new AWS.S3({
+      accessKeyId: process.env.ACCESS_KEY_ID,
+      secretAccessKey: process.env.SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION, // Optionally specify the region
+    });
+
+    const bucketName = process.env.S3_BUCKET;
+    const key = `${uuidv4()}-${file.originalname}`;
+
+    const params = {
+      Bucket: bucketName,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    };
+
+    try {
+      const data = await s3.upload(params).promise();
+      return { url: data.Location };
+    } catch (error) {
+      throw new Error(`Failed to upload file to S3: ${error.message}`);
     }
   }
 }

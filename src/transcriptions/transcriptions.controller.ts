@@ -7,15 +7,21 @@ import {
   Param,
   Delete,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
 import { TranscriptionsService } from "./transcriptions.service";
 import { Prisma } from "@prisma/client";
-import { ApiTags, ApiBody, ApiResponse } from "@nestjs/swagger";
+import { ApiTags, ApiBody, ApiResponse, ApiConsumes } from "@nestjs/swagger";
 import {
   CreateTranscriptionDto,
   UpdateTranscriptionDto,
+  UplodeFileDto,
 } from "./dto/transcriptions.dto";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { FileInterceptor } from "@nestjs/platform-express";
+// import { Multer } from "multer";
+// import { Express } from "express";
 
 @ApiTags("transcriptions")
 @Controller({ path: "transcriptions", version: "1" })
@@ -84,5 +90,22 @@ export class TranscriptionsController {
   @ApiResponse({ status: 404, description: "Transcription not found." })
   remove(@Param("id") id: string) {
     return this.transcriptionsService.remove(+id);
+  }
+
+  @Post("upload")
+  @ApiConsumes("multipart/form-data")
+  @ApiResponse({
+    status: 201,
+    description: "The file has been successfully uploaded in the server.",
+  })
+  @ApiResponse({ status: 400, description: "Bad Request." })
+  @ApiResponse({ status: 500, description: "Internal Server Error." })
+  @ApiBody({
+    description: "File upload",
+    type: UplodeFileDto,
+  })
+  @UseInterceptors(FileInterceptor("file"))
+  fileUpload(@UploadedFile() file: any) {
+    return this.transcriptionsService.fileUpload(file);
   }
 }
