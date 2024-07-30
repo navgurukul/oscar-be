@@ -10,17 +10,27 @@ import { v4 as uuidv4 } from "uuid"; // For generating unique file names
 import { config } from "dotenv";
 config();
 
-import AWS from "aws-sdk";
+import {
+  DeleteObjectCommand,
+  DeleteObjectCommandOutput,
+  PutObjectCommand,
+  PutObjectCommandOutput,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
-const S3Bucket = new AWS.S3({
-  accessKeyId: process.env.ACCESS_KEY_ID,
-  secretAccessKey: process.env.SECRET_ACCESS_KEY,
-  // BucketName: process.env.S3_BUCKET,
-});
 
 @Injectable()
 export class TranscriptionsService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  private s3Client: S3Client;
+  constructor(private readonly databaseService: DatabaseService) {
+    this.s3Client = new S3Client({
+      region: process.env.AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.ACCESS_KEY_ID,
+        secretAccessKey: process.env.SECRET_ACCESS_KEY,
+      },
+    });
+  }
 
   async create(
     createTranscriptionDto: Prisma.TranscriptionsCreateInput,
@@ -108,52 +118,48 @@ export class TranscriptionsService {
     }
   }
 
-  async fileUpload(file) {
-    const s3 = new AWS.S3({
-      accessKeyId: process.env.ACCESS_KEY_ID,
-      secretAccessKey: process.env.SECRET_ACCESS_KEY,
-      region: process.env.AWS_REGION, // Optionally specify the region
-    });
-
-    const bucketName = process.env.S3_BUCKET;
-    const key = `${uuidv4()}-${file.originalname}`;
-
-    const params = {
-      Bucket: bucketName,
-      Key: key,
+  async fileUpload(file: any): Promise<{ url: string; Key: string }> {
+    const Key = `${uuidv4()}-${file.originalname}`;
+    const uploadParams = {
+      Bucket: process.env.S3_BUCKET,
+      Key: Key,
       Body: file.buffer,
-      ContentType: file.mimetype,
+      ContentType: file.mimetype, // Set the appropriate MIME type
+      ContentDisposition: "inline", // Suggest displaying in browser
     };
 
     try {
-      const data = await s3.upload(params).promise();
-
-      return { url: data.Location, Key: data.Key };
-    } catch (error) {
-      throw new Error(`Failed to upload file to S3: ${error.message}`);
+      const command = new PutObjectCommand(uploadParams);
+      const data: PutObjectCommandOutput = await this.s3Client.send(command);
+      console.log(data, "Upload response");
+      const region =
+        typeof this.s3Client.config.region === "function"
+          ? await this.s3Client.config.region()
+          : this.s3Client.config.region;
+      const s3Url = `https://${uploadParams.Bucket}.s3.${region}.amazonaws.com/${Key}`;
+      return {
+        url: s3Url,
+        Key: Key,
+      };
+    } catch (err) {
+      console.error("Error uploading file:", err);
+      throw new Error("File upload failed");
     }
   }
 
-  // write code for delelte file.
-  async deleteFileFromS3(Key: string): Promise<void> {
-    const s3 = new AWS.S3({
-      accessKeyId: process.env.ACCESS_KEY_ID,
-      secretAccessKey: process.env.SECRET_ACCESS_KEY,
-      region: process.env.AWS_REGION, // Optionally specify the region
-    });
-
-    const bucketName = process.env.S3_BUCKET;
-    const params = {
-      Bucket: bucketName,
-      Key: Key,
+  async deleteFileFromS3(key: string): Promise<void> {
+    const deleteParams = {
+      Bucket: process.env.S3_BUCKET,
+      Key: key,
     };
 
     try {
-      await s3.deleteObject(params).promise();
-      console.log(`Deleted file from S3: ${Key}`);
-    } catch (error) {
-      console.error("Error deleting object:", error);
-      throw new InternalServerErrorException("Failed to delete file from S3");
+      const command = new DeleteObjectCommand(deleteParams);
+      const data: DeleteObjectCommandOutput = await this.s3Client.send(command);
+      console.log("Delete response:", data);
+    } catch (err) {
+      console.error("Error deleting file:", err);
+      throw new Error("File deletion failed");
     }
   }
 }

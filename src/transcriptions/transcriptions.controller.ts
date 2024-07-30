@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
+  UnauthorizedException,
 } from "@nestjs/common";
 
 import { TranscriptionsService } from "./transcriptions.service";
@@ -36,6 +37,7 @@ import { JwtPayload, verify } from "jsonwebtoken";
 export class TranscriptionsController {
   constructor(private readonly transcriptionsService: TranscriptionsService) {}
   @Post("upload-and-create")
+  // @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiConsumes("multipart/form-data")
   @ApiResponse({
@@ -56,15 +58,13 @@ export class TranscriptionsController {
     @Req() req: Request,
   ) {
     const token = req.headers.authorization?.split(" ")[1];
-    console.log(token, "token");
-    
     if (!token) {
-      throw new Error("No token provided");
+      throw new UnauthorizedException("No token provided");
     }
     const decoded = verify(token, process.env.JWT_SECRET) as JwtPayload;
-    
+
     const userId = decoded.userId;
-    
+
     const uploadResult = await this.transcriptionsService.fileUpload(file);
 
     let textFileUrl = uploadResult.url;
