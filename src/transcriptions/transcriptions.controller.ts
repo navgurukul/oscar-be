@@ -9,10 +9,18 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  Req,
 } from "@nestjs/common";
+
 import { TranscriptionsService } from "./transcriptions.service";
 import { Prisma } from "@prisma/client";
-import { ApiTags, ApiBody, ApiResponse, ApiConsumes } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiBody,
+  ApiResponse,
+  ApiConsumes,
+  ApiBearerAuth,
+} from "@nestjs/swagger";
 import {
   CreateTranscriptionDto,
   UpdateTranscriptionDto,
@@ -20,24 +28,57 @@ import {
 } from "./dto/transcriptions.dto";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
-// import { Multer } from "multer";
-// import { Express } from "express";
+import { Request } from "express";
+import { JwtPayload, verify } from "jsonwebtoken";
 
 @ApiTags("transcriptions")
 @Controller({ path: "transcriptions", version: "1" })
 export class TranscriptionsController {
   constructor(private readonly transcriptionsService: TranscriptionsService) {}
-
-  @Post()
-  @ApiBody({ type: CreateTranscriptionDto })
+  @Post("upload-and-create")
+  @ApiBearerAuth()
+  @ApiConsumes("multipart/form-data")
   @ApiResponse({
     status: 201,
-    description: "The transcription has been successfully created.",
+    description:
+      "The file has been successfully uploaded and the transcription has been created.",
   })
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
-  create(@Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput) {
-    return this.transcriptionsService.create(createTranscriptionDto, 1);
+  @ApiBody({
+    description: "File upload and transcription creation",
+    type: CreateTranscriptionDto,
+  })
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadAndCreate(
+    @UploadedFile() file: any,
+    @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput,
+    @Req() req: Request,
+  ) {
+    const token = req.headers.authorization?.split(" ")[1];
+    console.log(token, "token");
+    
+    if (!token) {
+      throw new Error("No token provided");
+    }
+    const decoded = verify(token, process.env.JWT_SECRET) as JwtPayload;
+    
+    const userId = decoded.userId;
+    
+    const uploadResult = await this.transcriptionsService.fileUpload(file);
+
+    let textFileUrl = uploadResult.url;
+    createTranscriptionDto.textFileUrl = textFileUrl;
+    createTranscriptionDto.s3AssessKey = uploadResult.Key;
+    let Key = uploadResult.Key;
+    const createResult = await this.transcriptionsService.create(
+      createTranscriptionDto,
+      userId,
+      Key,
+    );
+    return {
+      createResult,
+    };
   }
 
   @Get()
@@ -90,22 +131,5 @@ export class TranscriptionsController {
   @ApiResponse({ status: 404, description: "Transcription not found." })
   remove(@Param("id") id: string) {
     return this.transcriptionsService.remove(+id);
-  }
-
-  @Post("upload")
-  @ApiConsumes("multipart/form-data")
-  @ApiResponse({
-    status: 201,
-    description: "The file has been successfully uploaded in the server.",
-  })
-  @ApiResponse({ status: 400, description: "Bad Request." })
-  @ApiResponse({ status: 500, description: "Internal Server Error." })
-  @ApiBody({
-    description: "File upload",
-    type: UplodeFileDto,
-  })
-  @UseInterceptors(FileInterceptor("file"))
-  fileUpload(@UploadedFile() file: any) {
-    return this.transcriptionsService.fileUpload(file);
   }
 }

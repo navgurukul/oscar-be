@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { DatabaseService } from "src/database/database.service";
@@ -21,15 +25,21 @@ export class TranscriptionsService {
   async create(
     createTranscriptionDto: Prisma.TranscriptionsCreateInput,
     userId: number,
+    Key: string,
   ) {
-    return this.databaseService.transcriptions.create({
-      data: {
-        ...createTranscriptionDto,
-        user: {
-          connect: { id: 1 }, // Assuming `id` is the unique identifier for users
+    try {
+      return await this.databaseService.transcriptions.create({
+        data: {
+          ...createTranscriptionDto,
+          user: {
+            connect: { id: userId }, // Assuming `id` is the unique identifier for users
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      await this.deleteFileFromS3(Key);
+      throw new InternalServerErrorException("Failed to create transcription");
+    }
   }
 
   findAll() {
@@ -117,9 +127,33 @@ export class TranscriptionsService {
 
     try {
       const data = await s3.upload(params).promise();
-      return { url: data.Location };
+
+      return { url: data.Location, Key: data.Key };
     } catch (error) {
       throw new Error(`Failed to upload file to S3: ${error.message}`);
+    }
+  }
+
+  // write code for delelte file.
+  async deleteFileFromS3(Key: string): Promise<void> {
+    const s3 = new AWS.S3({
+      accessKeyId: process.env.ACCESS_KEY_ID,
+      secretAccessKey: process.env.SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION, // Optionally specify the region
+    });
+
+    const bucketName = process.env.S3_BUCKET;
+    const params = {
+      Bucket: bucketName,
+      Key: Key,
+    };
+
+    try {
+      await s3.deleteObject(params).promise();
+      console.log(`Deleted file from S3: ${Key}`);
+    } catch (error) {
+      console.error("Error deleting object:", error);
+      throw new InternalServerErrorException("Failed to delete file from S3");
     }
   }
 }

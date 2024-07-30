@@ -7,6 +7,7 @@ import { DatabaseService } from "src/database/database.service";
 import { UsersModule } from "src/users/users.module";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule } from "@nestjs/config";
+import { TranscriptionsModule } from "src/transcriptions/transcriptions.module";
 
 // console.log('process.env.JWT_SECRET', process.env.JWT_SECRET);
 @Module({
@@ -16,6 +17,7 @@ import { ConfigModule } from "@nestjs/config";
       signOptions: { expiresIn: "60m" },
     }),
     forwardRef(() => UsersModule),
+    forwardRef(() => TranscriptionsModule),
     ConfigModule,
   ],
   providers: [AuthService, GoogleStrategy, JwtStrategy, DatabaseService],

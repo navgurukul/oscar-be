@@ -2,10 +2,8 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString, IsOptional } from "class-validator";
 
 class CreateTranscriptionDto {
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  textFileUrl: string;
+  @ApiProperty({ type: "string", format: "binary" })
+  file: any;
 }
 
 class UpdateTranscriptionDto {
