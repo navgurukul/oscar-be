@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: oscar-be
+    build:
+      context: .
+      target: development
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - 3002:3002
+    command: npm run start:dev
