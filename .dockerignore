@@ -1,0 +1,37 @@
+# Ignore Node.js modules
+node_modules/
+
+# Ignore build artifacts
+dist/
+build/
+
+# Ignore Prisma client generation files
+prisma/generated/
+
+# Ignore environment variable files
+.env
+.env.local
+
+# Ignore logs
+*.log
+npm-debug.log
+
+# Ignore version control files
+.git/
+.gitignore
+
+# Ignore IDE and OS specific files
+.DS_Store
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore test files
+test/
+spec/
+*.spec.ts
+
+# Ignore temporary files
+*.tmp
+*.swp
