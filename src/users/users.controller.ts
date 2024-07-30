@@ -26,7 +26,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
-  @ApiBody({type: CreateUserDto})
+  @ApiBody({ type: CreateUserDto })
   create(@Body() createUserDto: Prisma.UserCreateInput) {
     return this.usersService.create(createUserDto);
   }

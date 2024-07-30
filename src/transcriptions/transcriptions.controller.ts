@@ -7,31 +7,78 @@ import {
   Param,
   Delete,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Req,
 } from "@nestjs/common";
+
 import { TranscriptionsService } from "./transcriptions.service";
 import { Prisma } from "@prisma/client";
-import { ApiTags, ApiBody, ApiResponse } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiBody,
+  ApiResponse,
+  ApiConsumes,
+  ApiBearerAuth,
+} from "@nestjs/swagger";
 import {
   CreateTranscriptionDto,
   UpdateTranscriptionDto,
+  UplodeFileDto,
 } from "./dto/transcriptions.dto";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { Request } from "express";
+import { JwtPayload, verify } from "jsonwebtoken";
 
 @ApiTags("transcriptions")
 @Controller({ path: "transcriptions", version: "1" })
 export class TranscriptionsController {
   constructor(private readonly transcriptionsService: TranscriptionsService) {}
-
-  @Post()
-  @ApiBody({ type: CreateTranscriptionDto })
+  @Post("upload-and-create")
+  @ApiBearerAuth()
+  @ApiConsumes("multipart/form-data")
   @ApiResponse({
     status: 201,
-    description: "The transcription has been successfully created.",
+    description:
+      "The file has been successfully uploaded and the transcription has been created.",
   })
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
-  create(@Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput) {
-    return this.transcriptionsService.create(createTranscriptionDto, 1);
+  @ApiBody({
+    description: "File upload and transcription creation",
+    type: CreateTranscriptionDto,
+  })
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadAndCreate(
+    @UploadedFile() file: any,
+    @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput,
+    @Req() req: Request,
+  ) {
+    const token = req.headers.authorization?.split(" ")[1];
+    console.log(token, "token");
+    
+    if (!token) {
+      throw new Error("No token provided");
+    }
+    const decoded = verify(token, process.env.JWT_SECRET) as JwtPayload;
+    
+    const userId = decoded.userId;
+    
+    const uploadResult = await this.transcriptionsService.fileUpload(file);
+
+    let textFileUrl = uploadResult.url;
+    createTranscriptionDto.textFileUrl = textFileUrl;
+    createTranscriptionDto.s3AssessKey = uploadResult.Key;
+    let Key = uploadResult.Key;
+    const createResult = await this.transcriptionsService.create(
+      createTranscriptionDto,
+      userId,
+      Key,
+    );
+    return {
+      createResult,
+    };
   }
 
   @Get()
