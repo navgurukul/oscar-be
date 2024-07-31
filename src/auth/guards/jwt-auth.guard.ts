@@ -25,7 +25,8 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
 
     try {
       const payload = await this.authService.validateToken(token);
-      const user = await this.usersService.findOne(payload.userId);
+      const userId = parseInt(payload.userId);
+      const user = await this.usersService.findOne(userId);
       if (!user) {
         throw new UnauthorizedException("User not found");
       }

@@ -23,7 +23,7 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api", app, document, {
-    customSiteTitle: "Oscar API Docs"
+    customSiteTitle: "Oscar API Docs",
   });
 
   await app.listen(process.env.PORT || 3002);
