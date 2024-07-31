@@ -30,14 +30,13 @@ import {
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Request } from "express";
-import { JwtPayload, verify } from "jsonwebtoken";
 
 @ApiTags("transcriptions")
 @Controller({ path: "transcriptions", version: "1" })
 export class TranscriptionsController {
   constructor(private readonly transcriptionsService: TranscriptionsService) {}
   @Post("upload-and-create")
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiConsumes("multipart/form-data")
   @ApiResponse({
@@ -57,13 +56,8 @@ export class TranscriptionsController {
     @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput,
     @Req() req: Request,
   ) {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      throw new UnauthorizedException("No token provided");
-    }
-    const decoded = verify(token, process.env.JWT_SECRET) as JwtPayload;
-
-    const userId = decoded.userId;
+    const user = req.user as any;
+    const userId = user.id;
 
     const uploadResult = await this.transcriptionsService.fileUpload(file);
 
