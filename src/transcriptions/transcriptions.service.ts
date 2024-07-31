@@ -18,7 +18,6 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 
-
 @Injectable()
 export class TranscriptionsService {
   private s3Client: S3Client;
