@@ -7,12 +7,14 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
+  BadRequestException,
 } from "@nestjs/common";
 import { UsersService } from "./users.service";
 import { Prisma } from "@prisma/client";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiBody } from "@nestjs/swagger";
-import { CreateUserDto } from "./dto/create-user-dto";
+import { CreateUserDto, UpdateUserDto } from "./dto/create-user-dto";
 
 @Controller({ path: "users", version: "1" })
 @ApiTags("users")
@@ -31,17 +33,25 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  // @UseGuards(JwtAuthGuard)
-  // @Get()
-  // @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: "The found records" })
+  @ApiResponse({ status: 404, description: "Not Found" })
+  @ApiResponse({ status: 500, description: "Internal Server Error." })
   findAll() {
     return this.usersService.findAll({});
   }
 
   @Get("me")
   @UseGuards(JwtAuthGuard)
-  getMe() {
-    return this.usersService.findAll({});
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: "The found record" })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @ApiResponse({ status: 500, description: "Internal Server Error." })
+  async findMe(@Req() req: Request) {
+    const reqe = req as any;
+    return reqe.user;
   }
 
   // @UseGuards(JwtAuthGuard)
@@ -55,11 +65,22 @@ export class UsersController {
 
   @Patch(":id")
   @UseGuards(JwtAuthGuard)
-  update(
+  @ApiBearerAuth()
+  @ApiBody({ description: "User update", type: UpdateUserDto })
+  @ApiResponse({ status: 200, description: "Updated user" })
+  @ApiResponse({ status: 404, description: "Not Found" })
+  @ApiResponse({ status: 500, description: "Internal Server Error." })
+  async update(
     @Param("id") id: string,
     @Body() updateUserDto: Prisma.UserUpdateInput,
   ) {
-    return this.usersService.update(+id, updateUserDto);
+    // Ensure the id is correctly converted to a number
+    // return await this.usersService.update(+id, UpdateUserDto as any);
+    const userId = +id;
+    if (isNaN(userId)) {
+      throw new BadRequestException("Invalid user ID");
+    }
+    return await this.usersService.update(userId, updateUserDto as any);
   }
 
   @UseGuards(JwtAuthGuard)

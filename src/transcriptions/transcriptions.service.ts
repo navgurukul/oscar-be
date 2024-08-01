@@ -51,8 +51,12 @@ export class TranscriptionsService {
     }
   }
 
-  findAll() {
-    return this.databaseService.transcriptions.findMany({});
+  findAll(userId: number) {
+    // return this.databaseService.transcriptions.findMany({});
+    // I want to get the data from the database by user id.
+    return this.databaseService.transcriptions.findMany({
+      where: { userId: userId },
+    });
   }
 
   async findOne(id: number) {
@@ -78,6 +82,7 @@ export class TranscriptionsService {
   async update(
     id: number,
     updateTranscriptionDto: Prisma.TranscriptionsUpdateInput,
+    file: any,
   ) {
     try {
       const updatedTranscription =
@@ -99,21 +104,24 @@ export class TranscriptionsService {
   }
 
   async remove(id: number) {
+    // first get the data from the database then get the key from the data and then delete the file from the s3 bucket and delete the data from the database.
     try {
-      const deletedTranscription =
-        await this.databaseService.transcriptions.delete({
-          where: { id },
-        });
-      return deletedTranscription;
-    } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === "P2025"
-      ) {
-        // P2025 is the error code for "Record to delete not found."
+      const data = await this.databaseService.transcriptions.findUnique({
+        where: { id },
+      });
+      console.log(data, "data");
+      if (!data) {
         throw new NotFoundException(`Transcription with ID ${id} not found`);
       }
-      throw error; // Rethrow any other errors
+      const Key = data.s3AssessKey;
+
+      await this.deleteFileFromS3(Key);
+      return await this.databaseService.transcriptions.delete({
+        where: { id },
+      });
+    } catch (err) {
+      console.log(err);
+      throw err;
     }
   }
 
@@ -146,7 +154,7 @@ export class TranscriptionsService {
     }
   }
 
-  async deleteFileFromS3(key: string): Promise<void> {
+  async deleteFileFromS3(key: string): Promise<DeleteObjectCommandOutput> {
     const deleteParams = {
       Bucket: process.env.S3_BUCKET,
       Key: key,
@@ -156,9 +164,30 @@ export class TranscriptionsService {
       const command = new DeleteObjectCommand(deleteParams);
       const data: DeleteObjectCommandOutput = await this.s3Client.send(command);
       console.log("Delete response:", data);
+      return;
     } catch (err) {
       console.error("Error deleting file:", err);
       throw new Error("File deletion failed");
+    }
+  }
+
+  async updateFileFromS3(
+    file: any,
+    id: string,
+  ): Promise<{ url: string; Key: string }> {
+    try {
+      const data = await this.databaseService.transcriptions.findUnique({
+        where: { id: +id },
+      });
+      if (!data) {
+        throw new NotFoundException(`Transcription with ID ${id} not found`);
+      }
+      const Key = data.s3AssessKey;
+      await this.deleteFileFromS3(Key);
+      return await this.fileUpload(file);
+    } catch (err) {
+      console.log(err);
+      throw err;
     }
   }
 }
