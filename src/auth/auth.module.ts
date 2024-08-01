@@ -15,7 +15,7 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
   imports: [
     JwtModule.register({
       secret: process.env.JWT_SECRET || "mai-nhi-btaunga",
-      signOptions: { expiresIn: "60m" },
+      signOptions: { expiresIn: "7d" },
     }),
     forwardRef(() => UsersModule),
     forwardRef(() => TranscriptionsModule),
@@ -31,4 +31,4 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
   controllers: [AuthController],
   exports: [AuthService, JwtAuthGuard],
 })
-export class AuthModule {}
+export class AuthModule { }
