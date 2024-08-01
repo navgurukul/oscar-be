@@ -1,6 +1,6 @@
 // wrote dto code.
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNotEmpty, IsString } from "class-validator";
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 class CreateUserDto {
   @ApiProperty()
@@ -24,18 +24,19 @@ class CreateUserDto {
 
 class UpdateUserDto {
   @ApiProperty()
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  firstName: string;
+  firstName?: string;
 
   @ApiProperty()
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  lastName: string;
+  lastName?: string;
 
   @ApiProperty()
+  @IsOptional()
   @IsString()
-  profilePicUrl: string;
+  profilePicUrl?: string;
 }
 
 export { CreateUserDto, UpdateUserDto };

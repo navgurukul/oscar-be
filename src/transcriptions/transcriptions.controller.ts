@@ -76,14 +76,18 @@ export class TranscriptionsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     description: "The transcriptions have been successfully fetched.",
   })
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
-  findAll() {
-    return this.transcriptionsService.findAll();
+  findAll(@Req() req: Request) {
+    const user = req.user as any;
+    const userId = user.id;
+    return this.transcriptionsService.findAll(userId);
   }
 
   @Get(":id")
@@ -99,7 +103,8 @@ export class TranscriptionsController {
   }
 
   @Patch(":id")
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
+  @ApiConsumes("multipart/form-data")
   @ApiResponse({
     status: 200,
     description: "The transcription has been successfully updated.",
@@ -109,10 +114,12 @@ export class TranscriptionsController {
   @ApiResponse({ status: 404, description: "Transcription not found." })
   @ApiBody({ type: UpdateTranscriptionDto })
   update(
+    @UploadedFile() file: any,
     @Param("id") id: string,
     @Body() updateTranscriptionDto: Prisma.TranscriptionsUpdateInput,
   ) {
-    return this.transcriptionsService.update(+id, updateTranscriptionDto);
+    const updateFile = this.transcriptionsService.updateFileFromS3(file, id);
+    return this.transcriptionsService.update(+id, updateTranscriptionDto, file);
   }
 
   @Delete(":id")

@@ -8,8 +8,7 @@ import { AuthModule } from "./auth/auth.module";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { ConfigModule } from "@nestjs/config";
-import { LoggerMiddleware } from './middleware/logger.middleware';
-
+import { LoggerMiddleware } from "./middleware/logger.middleware";
 
 @Module({
   imports: [
@@ -38,8 +37,6 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(LoggerMiddleware)
-      .forRoutes('*'); // Apply to all routes or specify routes as needed
+    consumer.apply(LoggerMiddleware).forRoutes("*"); // Apply to all routes or specify routes as needed
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { DatabaseService } from "src/database/database.service";
+import { UpdateUserDto } from "./dto/create-user-dto";
 
 @Injectable()
 export class UsersService {
@@ -41,10 +42,22 @@ export class UsersService {
     return user;
   }
 
-  update(id: number, updateUserDto: Prisma.UserUpdateInput) {
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    // Find the user by ID
+    const user = await this.databaseService.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    const updateData: Prisma.UserUpdateInput = {
+      ...updateUserDto,
+      email: { set: user.email }, // Example transformation for email
+    };
     return this.databaseService.user.update({
       where: { id },
-      data: updateUserDto,
+      data: updateData,
     });
   }
 
