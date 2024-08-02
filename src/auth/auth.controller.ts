@@ -11,7 +11,13 @@ import { AuthGuard } from "@nestjs/passport";
 import { Request } from "express";
 import { AuthService } from "./auth.service";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
-import { ApiTags, ApiResponse, ApiBody, ApiBearerAuth } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+  ApiExcludeEndpoint,
+} from "@nestjs/swagger";
 import { AuthDto } from "./dto/auth.dto";
 
 @ApiTags("auth")
@@ -19,9 +25,9 @@ import { AuthDto } from "./dto/auth.dto";
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Get("google")
-  @UseGuards(AuthGuard("google"))
-  googleAuth(@Req() req) {}
+  // @Get("google")
+  // @UseGuards(AuthGuard("google"))
+  // googleAuth(@Req() req) {}
 
   // if redirected to this route then it means that the user has successfully authenticated with Google.
   // @Get("google/redirect")
@@ -53,6 +59,7 @@ export class AuthController {
   @Get("profile")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiExcludeEndpoint()
   async profile(@Req() req: Request) {
     const user = req.user;
     return user;

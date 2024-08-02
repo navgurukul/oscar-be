@@ -13,16 +13,22 @@ import {
 import { UsersService } from "./users.service";
 import { Prisma } from "@prisma/client";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiBody, ApiExcludeEndpoint } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiExcludeEndpoint,
+} from "@nestjs/swagger";
 import { CreateUserDto, UpdateUserDto } from "./dto/create-user-dto";
 
 @Controller({ path: "users", version: "1" })
 @ApiTags("users")
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiExcludeEndpoint()  // add this to hide api from swagger
+  @ApiExcludeEndpoint() // add this to hide api from swagger
   @ApiResponse({
     status: 201,
     description: "The user has been successfully created.",
@@ -56,11 +62,13 @@ export class UsersController {
     return reqe.user;
   }
 
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get(":id")
   @ApiResponse({ status: 200, description: "The found record" })
   @ApiResponse({ status: 404, description: "Not Found" })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
   findOne(@Param("id") id: string) {
     return this.usersService.findOne(+id);
   }
@@ -72,6 +80,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: "Updated user" })
   @ApiResponse({ status: 404, description: "Not Found" })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
+  @ApiResponse({})
   async update(
     @Param("id") id: string,
     @Body() updateUserDto: Prisma.UserUpdateInput,
