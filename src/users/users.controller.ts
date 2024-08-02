@@ -13,15 +13,16 @@ import {
 import { UsersService } from "./users.service";
 import { Prisma } from "@prisma/client";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiBody } from "@nestjs/swagger";
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiBody, ApiExcludeEndpoint } from "@nestjs/swagger";
 import { CreateUserDto, UpdateUserDto } from "./dto/create-user-dto";
 
 @Controller({ path: "users", version: "1" })
 @ApiTags("users")
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Post()
+  @ApiExcludeEndpoint()  // add this to hide api from swagger
   @ApiResponse({
     status: 201,
     description: "The user has been successfully created.",
@@ -35,6 +36,7 @@ export class UsersController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
+  @ApiExcludeEndpoint()
   @ApiBearerAuth()
   @ApiResponse({ status: 200, description: "The found records" })
   @ApiResponse({ status: 404, description: "Not Found" })
