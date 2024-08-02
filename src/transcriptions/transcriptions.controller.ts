@@ -91,6 +91,8 @@ export class TranscriptionsController {
   }
 
   @Get(":id")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     description: "The transcription has been successfully fetched.",
@@ -104,6 +106,7 @@ export class TranscriptionsController {
 
   @Patch(":id")
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiConsumes("multipart/form-data")
   @ApiResponse({
     status: 200,
@@ -123,6 +126,8 @@ export class TranscriptionsController {
   }
 
   @Delete(":id")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiResponse({
     status: 200,
     description: "The transcription has been successfully deleted.",
