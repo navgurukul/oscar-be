@@ -41,7 +41,7 @@ export class TranscriptionsService {
     Key: string,
   ) {
     try {
-      return await this.databaseService.transcriptions.create({
+      const create = await this.databaseService.transcriptions.create({
         data: {
           ...createTranscriptionDto,
           user: {
@@ -49,6 +49,10 @@ export class TranscriptionsService {
           },
         },
       });
+      return {
+        message: "Transcription created successfully",
+        status: "success",
+      };
     } catch (error) {
       await this.deleteFileFromS3(Key);
       throw new InternalServerErrorException("Failed to create transcription");
@@ -76,8 +80,10 @@ export class TranscriptionsService {
         const Key = element.s3AssessKey;
         const text = await this.readS3Object(Key);
         transcribedText = text;
+        repObj["transcribedText"] = transcribedText;
+      } else {
+        repObj["transcribedText"] = JSON.parse(transcribedText);
       }
-      repObj["transcribedText"] = transcribedText;
       resp.push(repObj);
     }
     return resp;
@@ -106,8 +112,9 @@ export class TranscriptionsService {
       if (data.flag === "S3") {
         const Key = data.s3AssessKey;
         const text = await this.readS3Object(Key);
-        transcribedText = text;
-        repObj["transcribedText"] = transcribedText;
+        repObj["transcribedText"] = text;
+      } else {
+        repObj["transcribedText"] = JSON.parse(transcribedText);
       }
 
       return repObj; // Return the found transcription

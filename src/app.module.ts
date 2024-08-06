@@ -18,8 +18,8 @@ import { LoggerMiddleware } from "./middleware/logger.middleware";
     }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // 5 minutes
-        limit: 5, // 50 requests
+        ttl: 5 * 60000, // 5 minutes
+        limit: 50, // 50 requests
       },
     ]),
     DatabaseModule,

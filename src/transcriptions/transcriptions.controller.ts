@@ -11,6 +11,7 @@ import {
   UploadedFile,
   Req,
   UnauthorizedException,
+  BadRequestException,
 } from "@nestjs/common";
 
 import { TranscriptionsService } from "./transcriptions.service";
@@ -30,7 +31,7 @@ import {
 } from "./dto/transcriptions.dto";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { Request } from "express";
+import e, { Request } from "express";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -38,7 +39,7 @@ import * as fs from "fs";
 @Controller({ path: "transcriptions", version: "1" })
 export class TranscriptionsController {
   constructor(private readonly transcriptionsService: TranscriptionsService) {}
-  @Post("upload-and-create")
+  @Post("add")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   // @ApiConsumes("multipart/form-data")
@@ -66,14 +67,14 @@ export class TranscriptionsController {
   ) {
     const user = req.user as any;
     const userId = user.id;
-    // console.log(req.body);
-
+    const { transcribedText } = req.body;
+    if (transcribedText.length < 10) {
+      throw new BadRequestException("Data not provided or too short");
+    }
     const text_string = req.body.transcribedText;
 
     const bytes = new TextEncoder().encode(text_string).length;
     const megabytes = bytes / (1024 * 1024);
-    // console.log(megabytes, "this is the size of the file");
-    // return 'OKKKKKKKKKKKKKKKKKKK'
 
     let flag: Flag = "DB";
     let textFileUrl = null;
@@ -81,9 +82,13 @@ export class TranscriptionsController {
 
     createTranscriptionDto.flag = flag;
 
+    createTranscriptionDto.transcribedText = JSON.stringify(text_string);
+
+    // 
     if (megabytes > 1.5) {
-      const uploadResult =
-        await this.transcriptionsService.fileUpload(text_string);
+      const uploadResult = await this.transcriptionsService.fileUpload(
+        text_string,
+      );
       textFileUrl = uploadResult.url;
       createTranscriptionDto.textFileUrl = textFileUrl;
       createTranscriptionDto.s3AssessKey = uploadResult.Key;
@@ -92,21 +97,12 @@ export class TranscriptionsController {
       delete createTranscriptionDto.transcribedText;
     }
 
-    createTranscriptionDto;
     const createResult = await this.transcriptionsService.create(
       createTranscriptionDto,
       userId,
       s3AssessKey,
     );
-    delete createResult.textFileUrl;
-    delete createResult.s3AssessKey;
-    if (createResult.flag === "S3") {
-      createResult["transcribedText"] = text_string;
-    }
-
-    return {
-      createResult,
-    };
+    return createResult;
   }
 
   @Get()
