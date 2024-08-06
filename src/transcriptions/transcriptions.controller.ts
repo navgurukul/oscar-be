@@ -14,7 +14,8 @@ import {
 } from "@nestjs/common";
 
 import { TranscriptionsService } from "./transcriptions.service";
-import { Prisma } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+import { Flag } from "@prisma/client";
 import {
   ApiTags,
   ApiBody,
@@ -30,6 +31,8 @@ import {
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Request } from "express";
+import * as path from "path";
+import * as fs from "fs";
 
 @ApiTags("transcriptions")
 @Controller({ path: "transcriptions", version: "1" })
@@ -38,7 +41,7 @@ export class TranscriptionsController {
   @Post("upload-and-create")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiConsumes("multipart/form-data")
+  // @ApiConsumes("multipart/form-data")
   @ApiResponse({
     status: 201,
     description:
@@ -47,29 +50,60 @@ export class TranscriptionsController {
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
   @ApiBody({
-    description: "File upload and transcription creation",
-    type: CreateTranscriptionDto,
+    schema: {
+      type: "object",
+      properties: {
+        transcribedText: { type: "string" },
+      },
+      required: ["transcribedText"],
+    },
   })
-  @UseInterceptors(FileInterceptor("file"))
+  // @UseInterceptors(FileInterceptor("file"))
   async uploadAndCreate(
-    @UploadedFile() file: any,
+    // @UploadedFile() file: any,
     @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput,
     @Req() req: Request,
   ) {
     const user = req.user as any;
     const userId = user.id;
+    // console.log(req.body);
 
-    const uploadResult = await this.transcriptionsService.fileUpload(file);
+    const text_string = req.body.transcribedText;
 
-    let textFileUrl = uploadResult.url;
-    createTranscriptionDto.textFileUrl = textFileUrl;
-    createTranscriptionDto.s3AssessKey = uploadResult.Key;
-    let Key = uploadResult.Key;
+    const bytes = new TextEncoder().encode(text_string).length;
+    const megabytes = bytes / (1024 * 1024);
+    // console.log(megabytes, "this is the size of the file");
+    // return 'OKKKKKKKKKKKKKKKKKKK'
+
+    let flag: Flag = "DB";
+    let textFileUrl = null;
+    let s3AssessKey = null;
+
+    createTranscriptionDto.flag = flag;
+
+    if (megabytes > 1.5) {
+      const uploadResult =
+        await this.transcriptionsService.fileUpload(text_string);
+      textFileUrl = uploadResult.url;
+      createTranscriptionDto.textFileUrl = textFileUrl;
+      createTranscriptionDto.s3AssessKey = uploadResult.Key;
+      s3AssessKey = uploadResult.Key;
+      createTranscriptionDto.flag = "S3";
+      delete createTranscriptionDto.transcribedText;
+    }
+
+    createTranscriptionDto;
     const createResult = await this.transcriptionsService.create(
       createTranscriptionDto,
       userId,
-      Key,
+      s3AssessKey,
     );
+    delete createResult.textFileUrl;
+    delete createResult.s3AssessKey;
+    if (createResult.flag === "S3") {
+      createResult["transcribedText"] = text_string;
+    }
+
     return {
       createResult,
     };
@@ -84,10 +118,13 @@ export class TranscriptionsController {
   })
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
-  findAll(@Req() req: Request) {
+  async findAll(@Req() req: Request) {
     const user = req.user as any;
     const userId = user.id;
-    return this.transcriptionsService.findAll(userId);
+    // return await this.transcriptionsService.findAll(userId);
+    let re = await this.transcriptionsService.findAll(userId);
+    // console.log(re, "this is the response");
+    return re;
   }
 
   @Get(":id")

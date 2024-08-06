@@ -13,10 +13,14 @@ config();
 import {
   DeleteObjectCommand,
   DeleteObjectCommandOutput,
+  GetObjectCommand,
   PutObjectCommand,
   PutObjectCommandOutput,
   S3Client,
 } from "@aws-sdk/client-s3";
+import path from "path";
+import fs from "fs";
+import { Readable } from "stream";
 
 @Injectable()
 export class TranscriptionsService {
@@ -51,12 +55,32 @@ export class TranscriptionsService {
     }
   }
 
-  findAll(userId: number) {
+  async findAll(userId: number) {
     // return this.databaseService.transcriptions.findMany({});
     // I want to get the data from the database by user id.
-    return this.databaseService.transcriptions.findMany({
+    const resp = [];
+    const data = await this.databaseService.transcriptions.findMany({
       where: { userId: userId },
     });
+
+    for (const element of data) {
+      let transcribedText = element.transcribedText;
+      const repObj = {
+        id: element.id,
+        userId: element.userId,
+        transcribedText: element.transcribedText,
+        createdAt: element.createdAt,
+        updatedAt: element.updatedAt,
+      };
+      if (element.flag === "S3") {
+        const Key = element.s3AssessKey;
+        const text = await this.readS3Object(Key);
+        transcribedText = text;
+      }
+      repObj["transcribedText"] = transcribedText;
+      resp.push(repObj);
+    }
+    return resp;
   }
 
   async findOne(id: number) {
@@ -71,8 +95,22 @@ export class TranscriptionsService {
         console.log("Transcription not found");
         throw new NotFoundException("Transcription not found");
       }
+      let transcribedText = data.transcribedText;
+      const repObj = {
+        id: data.id,
+        userId: data.userId,
+        transcribedText: data.transcribedText,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      };
+      if (data.flag === "S3") {
+        const Key = data.s3AssessKey;
+        const text = await this.readS3Object(Key);
+        transcribedText = text;
+        repObj["transcribedText"] = transcribedText;
+      }
 
-      return data; // Return the found transcription
+      return repObj; // Return the found transcription
     } catch (err) {
       console.log(err);
       throw err; // Rethrow the error to be handled by the caller
@@ -113,9 +151,13 @@ export class TranscriptionsService {
       if (!data) {
         throw new NotFoundException(`Transcription with ID ${id} not found`);
       }
-      const Key = data.s3AssessKey;
-
-      await this.deleteFileFromS3(Key);
+      if (data.flag === "S3") {
+        const Key = data.s3AssessKey;
+        await this.deleteFileFromS3(Key);
+        return await this.databaseService.transcriptions.delete({
+          where: { id },
+        });
+      }
       return await this.databaseService.transcriptions.delete({
         where: { id },
       });
@@ -125,32 +167,75 @@ export class TranscriptionsService {
     }
   }
 
-  async fileUpload(file: any): Promise<{ url: string; Key: string }> {
-    const Key = `${uuidv4()}-${file.originalname}`;
-    const uploadParams = {
-      Bucket: process.env.S3_BUCKET,
-      Key: Key,
-      Body: file.buffer,
-      ContentType: file.mimetype, // Set the appropriate MIME type
-      ContentDisposition: "inline", // Suggest displaying in browser
-    };
+  async readS3Object(Key: string) {
+    try {
+      const s3Client = new S3Client({
+        region: process.env.AWS_REGION,
+        credentials: {
+          accessKeyId: process.env.ACCESS_KEY_ID,
+          secretAccessKey: process.env.SECRET_ACCESS_KEY,
+        },
+      });
+      const command = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: Key,
+      });
+      const response = await s3Client.send(command);
+
+      const streamToString = (stream: Readable): Promise<string> =>
+        new Promise((resolve, reject) => {
+          const chunks: any[] = [];
+          stream.on("data", (chunk) => chunks.push(chunk));
+          stream.on("error", reject);
+          stream.on("end", () =>
+            resolve(Buffer.concat(chunks).toString("utf-8")),
+          );
+        });
+
+      const data = await streamToString(response.Body as Readable);
+
+      // console.log("File content:", data, "data=============");
+      return data;
+    } catch (err) {
+      console.error("Error reading file from S3:", err);
+    }
+  }
+
+  async fileUpload(text_string: string): Promise<{ url: string; Key: string }> {
+    // Convert the text to a Buffer
+    const buffer = Buffer.from(text_string, "utf-8");
+
+    // Define the file path
+    const filePath = path.join(__dirname, "output.bin");
+
+    // Write the Buffer to a file in binary format
+    fs.writeFileSync(filePath, buffer);
 
     try {
+      const fileStream = fs.createReadStream(filePath);
+      console.log(fileStream, "fileStream");
+
+      const Key = `${uuidv4()}-output.txt`;
+      const uploadParams = {
+        Bucket: process.env.S3_BUCKET,
+        Key: Key,
+        Body: fileStream,
+        ContentType: "application/octet-stream", // Set the appropriate MIME type
+        ContentDisposition: "inline", // Suggest displaying in browser
+      };
       const command = new PutObjectCommand(uploadParams);
-      const data: PutObjectCommandOutput = await this.s3Client.send(command);
-      console.log(data, "Upload response");
-      const region =
-        typeof this.s3Client.config.region === "function"
-          ? await this.s3Client.config.region()
-          : this.s3Client.config.region;
-      const s3Url = `https://${uploadParams.Bucket}.s3.${region}.amazonaws.com/${Key}`;
+      const response = await this.s3Client.send(command);
+      const s3Url = `https://${uploadParams.Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${Key}`;
+
+      console.log("File uploaded successfully:", s3Url);
+
+      console.log("File uploaded successfully:");
       return {
         url: s3Url,
         Key: Key,
       };
     } catch (err) {
       console.error("Error uploading file:", err);
-      throw new Error("File upload failed");
     }
   }
 
