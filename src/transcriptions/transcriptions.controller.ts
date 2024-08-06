@@ -11,10 +11,12 @@ import {
   UploadedFile,
   Req,
   UnauthorizedException,
+  BadRequestException,
 } from "@nestjs/common";
 
 import { TranscriptionsService } from "./transcriptions.service";
-import { Prisma } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+import { Flag } from "@prisma/client";
 import {
   ApiTags,
   ApiBody,
@@ -29,16 +31,18 @@ import {
 } from "./dto/transcriptions.dto";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { Request } from "express";
+import e, { Request } from "express";
+import * as path from "path";
+import * as fs from "fs";
 
 @ApiTags("transcriptions")
 @Controller({ path: "transcriptions", version: "1" })
 export class TranscriptionsController {
   constructor(private readonly transcriptionsService: TranscriptionsService) {}
-  @Post("upload-and-create")
+  @Post("add")
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiConsumes("multipart/form-data")
+  // @ApiConsumes("multipart/form-data")
   @ApiResponse({
     status: 201,
     description:
@@ -47,32 +51,58 @@ export class TranscriptionsController {
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
   @ApiBody({
-    description: "File upload and transcription creation",
-    type: CreateTranscriptionDto,
+    schema: {
+      type: "object",
+      properties: {
+        transcribedText: { type: "string" },
+      },
+      required: ["transcribedText"],
+    },
   })
-  @UseInterceptors(FileInterceptor("file"))
+  // @UseInterceptors(FileInterceptor("file"))
   async uploadAndCreate(
-    @UploadedFile() file: any,
+    // @UploadedFile() file: any,
     @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput,
     @Req() req: Request,
   ) {
     const user = req.user as any;
     const userId = user.id;
+    const { transcribedText } = req.body;
+    if (transcribedText.length < 10) {
+      throw new BadRequestException("Data not provided or too short");
+    }
+    const text_string = req.body.transcribedText;
 
-    const uploadResult = await this.transcriptionsService.fileUpload(file);
+    const bytes = new TextEncoder().encode(text_string).length;
+    const megabytes = bytes / (1024 * 1024);
 
-    let textFileUrl = uploadResult.url;
-    createTranscriptionDto.textFileUrl = textFileUrl;
-    createTranscriptionDto.s3AssessKey = uploadResult.Key;
-    let Key = uploadResult.Key;
+    let flag: Flag = "DB";
+    let textFileUrl = null;
+    let s3AssessKey = null;
+
+    createTranscriptionDto.flag = flag;
+
+    createTranscriptionDto.transcribedText = JSON.stringify(text_string);
+
+    // 
+    if (megabytes > 1.5) {
+      const uploadResult = await this.transcriptionsService.fileUpload(
+        text_string,
+      );
+      textFileUrl = uploadResult.url;
+      createTranscriptionDto.textFileUrl = textFileUrl;
+      createTranscriptionDto.s3AssessKey = uploadResult.Key;
+      s3AssessKey = uploadResult.Key;
+      createTranscriptionDto.flag = "S3";
+      delete createTranscriptionDto.transcribedText;
+    }
+
     const createResult = await this.transcriptionsService.create(
       createTranscriptionDto,
       userId,
-      Key,
+      s3AssessKey,
     );
-    return {
-      createResult,
-    };
+    return createResult;
   }
 
   @Get()
@@ -84,10 +114,13 @@ export class TranscriptionsController {
   })
   @ApiResponse({ status: 400, description: "Bad Request." })
   @ApiResponse({ status: 500, description: "Internal Server Error." })
-  findAll(@Req() req: Request) {
+  async findAll(@Req() req: Request) {
     const user = req.user as any;
     const userId = user.id;
-    return this.transcriptionsService.findAll(userId);
+    // return await this.transcriptionsService.findAll(userId);
+    let re = await this.transcriptionsService.findAll(userId);
+    // console.log(re, "this is the response");
+    return re;
   }
 
   @Get(":id")

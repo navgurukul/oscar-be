@@ -20,6 +20,11 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
+enum Flag {
+  DB
+  S3
+}
+
 enum PlanName {
   BASIC
   STANDARD
@@ -85,14 +90,13 @@ model Payment {
 }
 
 model Transcriptions {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  audioUrl    String?
-  textFileUrl String
-  s3Url       String?  // This is the new column
-  s3AssessKey String?  // This is the new column
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id])
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  textFileUrl     String?
+  s3AssessKey     String? // This is the new column
+  transcribedText String?  @db.Text
+  flag            Flag     @default(DB)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id])
 }
-
