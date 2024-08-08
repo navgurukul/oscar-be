@@ -3,6 +3,8 @@ import { AppModule } from "./app.module";
 import { VersioningType } from "@nestjs/common";
 import helmet from "helmet";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import { ResponseTransformInterceptor } from "./common/interceptors/response-transform.interceptor";
+import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +13,10 @@ async function bootstrap() {
   app.enableCors();
 
   app.setGlobalPrefix("api");
+
+  // we are using the interceptor and filter globally
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
   app.enableVersioning({
     type: VersioningType.URI,

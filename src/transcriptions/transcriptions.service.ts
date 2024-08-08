@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Flag, Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { DatabaseService } from "src/database/database.service";
 import { v4 as uuidv4 } from "uuid"; // For generating unique file names
@@ -49,12 +49,13 @@ export class TranscriptionsService {
           },
         },
       });
-      return {
-        message: "Transcription created successfully",
-        status: "success",
-      };
+      create["message"] = "Transcription created successfully";
+      create["transcribedText"] = JSON.parse(create.transcribedText);
+      return create;
     } catch (error) {
-      await this.deleteFileFromS3(Key);
+      if (Key != undefined && Key != null && Key != "") {
+        await this.deleteFileFromS3(Key);
+      }
       throw new InternalServerErrorException("Failed to create transcription");
     }
   }
@@ -90,16 +91,13 @@ export class TranscriptionsService {
   }
 
   async findOne(id: number) {
-    console.log(id, "id");
-
     try {
       const data = await this.databaseService.transcriptions.findUnique({
         where: { id },
       });
 
       if (!data) {
-        console.log("Transcription not found");
-        throw new NotFoundException("Transcription not found");
+        throw new NotFoundException(`Transcription not found`);
       }
       let transcribedText = data.transcribedText;
       const repObj = {
@@ -119,7 +117,6 @@ export class TranscriptionsService {
 
       return repObj; // Return the found transcription
     } catch (err) {
-      console.log(err);
       throw err; // Rethrow the error to be handled by the caller
     }
   }
@@ -154,7 +151,6 @@ export class TranscriptionsService {
       const data = await this.databaseService.transcriptions.findUnique({
         where: { id },
       });
-      console.log(data, "data");
       if (!data) {
         throw new NotFoundException(`Transcription with ID ${id} not found`);
       }
@@ -165,11 +161,12 @@ export class TranscriptionsService {
           where: { id },
         });
       }
-      return await this.databaseService.transcriptions.delete({
+      const resp = await this.databaseService.transcriptions.delete({
         where: { id },
       });
+      resp["message"] = "Transcription deleted successfully";
+      return resp;
     } catch (err) {
-      console.log(err);
       throw err;
     }
   }
@@ -201,7 +198,6 @@ export class TranscriptionsService {
 
       const data = await streamToString(response.Body as Readable);
 
-      // console.log("File content:", data, "data=============");
       return data;
     } catch (err) {
       console.error("Error reading file from S3:", err);
@@ -220,7 +216,6 @@ export class TranscriptionsService {
 
     try {
       const fileStream = fs.createReadStream(filePath);
-      console.log(fileStream, "fileStream");
 
       const Key = `${uuidv4()}-output.txt`;
       const uploadParams = {
@@ -278,7 +273,6 @@ export class TranscriptionsService {
       await this.deleteFileFromS3(Key);
       return await this.fileUpload(file);
     } catch (err) {
-      console.log(err);
       throw err;
     }
   }
