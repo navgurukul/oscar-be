@@ -12,14 +12,17 @@ export class AuthService {
     private usersService: UsersService,
     private readonly jwtService: JwtService,
   ) {
-    this.client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    this.client = new OAuth2Client();
   }
 
-  async validateGoogleToken(idToken: string) {
+  async validateGoogleToken(idToken: string, isMobile: boolean) {
     try {
+      // let flg = false;
       const ticket = await this.client.verifyIdToken({
         idToken: idToken,
-        audience: process.env.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
+        audience: isMobile
+          ? process.env.ANDROID_GOOGLE_CLIENT_ID
+          : process.env.WEB_GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
       });
 
       const payload = ticket.getPayload();
@@ -56,49 +59,49 @@ export class AuthService {
     }
   }
 
-  // async validateUser(email: string): Promise<any> {
-  //     const user = await this.databaseService.user.findUnique({
-  //         where: { email },
-  //     });
-  //     if (user) {
-  //         return user;
-  //     }
-  //     return null;
-  // }
+  async validateUser(email: string): Promise<any> {
+    const user = await this.databaseService.user.findUnique({
+      where: { email },
+    });
+    if (user) {
+      return user;
+    }
+    return null;
+  }
 
-  // async login(userData: any) {
-  //     try {
-  //         if (!userData.email) {
-  //             throw new UnauthorizedException("Invalid User Data");
-  //         }
-  //         var user: {
-  //             id: number;
-  //             email: string;
-  //             firstName: string;
-  //             lastName: string | null;
-  //             profilePicUrl: string | null;
-  //             subscriptionStatus: $Enums.SubscriptionStatus | null;
-  //             createdAt: Date;
-  //             updatedAt: Date;
-  //         };
-  //         user = await this.usersService.findByEmail(userData.email);
-  //         if (!user && userData.firstName) {
-  //             user = await this.usersService.create({
-  //                 email: userData.email,
-  //                 firstName: userData.firstName,
-  //                 lastName: userData.lastName,
-  //                 profilePicUrl: userData.picture,
-  //             });
-  //         }
-  //         const payload = { email: user.email, userID: user.id };
-  //         return {
-  //             user,
-  //             access_token: this.jwtService.sign(payload),
-  //         };
-  //     } catch (error) {
-  //         throw new UnauthorizedException("Invalid token");
-  //     }
-  // }
+  async login(userData: any) {
+    try {
+      if (!userData.email) {
+        throw new UnauthorizedException("Invalid User Data");
+      }
+      let user: {
+        id: number;
+        email: string;
+        firstName: string;
+        lastName: string | null;
+        profilePicUrl: string | null;
+        subscriptionStatus: $Enums.SubscriptionStatus | null;
+        createdAt: Date;
+        updatedAt: Date;
+      } | { message: string };
+      user = await this.usersService.findByEmail(userData.email);
+      if (!user && userData.firstName) {
+        user = await this.usersService.create({
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profilePicUrl: userData.picture,
+        });
+      }
+      const payload = { email: (user as { id: number; email: string; firstName: string; lastName: string; profilePicUrl: string; subscriptionStatus: $Enums.SubscriptionStatus | null; createdAt: Date; updatedAt: Date; }).email, userID: user.id };
+      return {
+        user,
+        token: this.jwtService.sign(payload),
+      };
+    } catch (error) {
+      throw new UnauthorizedException("Invalid token");
+    }
+  }
 
   validateToken(token: string) {
     return this.jwtService.verify(token, {
