@@ -10,7 +10,6 @@ import { ConfigModule } from "@nestjs/config";
 import { TranscriptionsModule } from "src/transcriptions/transcriptions.module";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 
-// console.log('process.env.JWT_SECRET', process.env.JWT_SECRET);
 @Module({
   imports: [
     JwtModule.register({

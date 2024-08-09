@@ -31,9 +31,7 @@ import {
 } from "./dto/transcriptions.dto";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { FileInterceptor } from "@nestjs/platform-express";
-import e, { Request } from "express";
-import * as path from "path";
-import * as fs from "fs";
+import { Request } from "express";
 
 @ApiTags("transcriptions")
 @Controller({ path: "transcriptions", version: "1" })
@@ -68,7 +66,7 @@ export class TranscriptionsController {
     const user = req.user as any;
     const userId = user.id;
     const { transcribedText } = req.body;
-    if (transcribedText.length < 10) {
+    if (transcribedText?.length < 10 || !transcribedText) {
       throw new BadRequestException("Data not provided or too short");
     }
     const text_string = req.body.transcribedText;
@@ -84,11 +82,10 @@ export class TranscriptionsController {
 
     createTranscriptionDto.transcribedText = JSON.stringify(text_string);
 
-    // 
+    //
     if (megabytes > 1.5) {
-      const uploadResult = await this.transcriptionsService.fileUpload(
-        text_string,
-      );
+      const uploadResult =
+        await this.transcriptionsService.fileUpload(text_string);
       textFileUrl = uploadResult.url;
       createTranscriptionDto.textFileUrl = textFileUrl;
       createTranscriptionDto.s3AssessKey = uploadResult.Key;
@@ -117,10 +114,7 @@ export class TranscriptionsController {
   async findAll(@Req() req: Request) {
     const user = req.user as any;
     const userId = user.id;
-    // return await this.transcriptionsService.findAll(userId);
-    let re = await this.transcriptionsService.findAll(userId);
-    // console.log(re, "this is the response");
-    return re;
+    return await this.transcriptionsService.findAll(userId);
   }
 
   @Get(":id")
