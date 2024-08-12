@@ -93,7 +93,7 @@ export class AuthService {
           profilePicUrl: userData.picture,
         });
       }
-      const payload = { email: (user as { id: number; email: string; firstName: string; lastName: string; profilePicUrl: string; subscriptionStatus: $Enums.SubscriptionStatus | null; createdAt: Date; updatedAt: Date; }).email, userID: user.id };
+      const payload = { email: (user as { id: number; email: string; firstName: string; lastName: string; profilePicUrl: string; subscriptionStatus: $Enums.SubscriptionStatus | null; createdAt: Date; updatedAt: Date; }).email, userId: user.id };
       return {
         user,
         token: this.jwtService.sign(payload),
