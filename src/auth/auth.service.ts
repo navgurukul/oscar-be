@@ -74,16 +74,18 @@ export class AuthService {
       if (!userData.email) {
         throw new UnauthorizedException("Invalid User Data");
       }
-      let user: {
-        id: number;
-        email: string;
-        firstName: string;
-        lastName: string | null;
-        profilePicUrl: string | null;
-        subscriptionStatus: $Enums.SubscriptionStatus | null;
-        createdAt: Date;
-        updatedAt: Date;
-      } | { message: string };
+      let user:
+        | {
+            id: number;
+            email: string;
+            firstName: string;
+            lastName: string | null;
+            profilePicUrl: string | null;
+            subscriptionStatus: $Enums.SubscriptionStatus | null;
+            createdAt: Date;
+            updatedAt: Date;
+          }
+        | { message: string };
       user = await this.usersService.findByEmail(userData.email);
       if (!user && userData.firstName) {
         user = await this.usersService.create({
@@ -93,11 +95,26 @@ export class AuthService {
           profilePicUrl: userData.picture,
         });
       }
-      const payload = { email: (user as { id: number; email: string; firstName: string; lastName: string; profilePicUrl: string; subscriptionStatus: $Enums.SubscriptionStatus | null; createdAt: Date; updatedAt: Date; }).email, userId: user.id };
-      return {
+      const payload = {
+        email: (
+          user as {
+            id: number;
+            email: string;
+            firstName: string;
+            lastName: string;
+            profilePicUrl: string;
+            subscriptionStatus: $Enums.SubscriptionStatus | null;
+            createdAt: Date;
+            updatedAt: Date;
+          }
+        ).email,
+        userId: user.id,
+      };
+      const response = {
         user,
         token: this.jwtService.sign(payload),
       };
+      return response;
     } catch (error) {
       throw new UnauthorizedException("Invalid token");
     }
@@ -107,5 +124,15 @@ export class AuthService {
     return this.jwtService.verify(token, {
       secret: process.env.JWT_SECRET_KEY,
     });
+  }
+
+  usersRegisterLogin(
+    email: string,
+    firstName: string,
+    lastName: string,
+    profilePicUrl: string,
+  ) {
+    try {
+    } catch (error) {}
   }
 }

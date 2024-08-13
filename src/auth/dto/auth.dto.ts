@@ -5,4 +5,17 @@ class AuthDto {
   idToken: string;
 }
 
-export { AuthDto };
+class AuthRegisterDto {
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  firstName: string;
+
+  @ApiProperty()
+  lastName: string;
+
+  @ApiProperty()
+  profilePicUrl: string;
+}
+export { AuthDto, AuthRegisterDto };

@@ -19,7 +19,7 @@ import {
   ApiBearerAuth,
   ApiExcludeEndpoint,
 } from "@nestjs/swagger";
-import { AuthDto } from "./dto/auth.dto";
+import { AuthDto, AuthRegisterDto } from "./dto/auth.dto";
 
 @ApiTags("auth")
 @Controller({ path: "auth", version: "1" })
@@ -27,24 +27,18 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Get("google")
+  @ApiExcludeEndpoint()
   @UseGuards(AuthGuard("google"))
   googleAuth(@Req() req) {}
 
   // if redirected to this route then it means that the user has successfully authenticated with Google.
   @Get("google/redirect")
+  @ApiExcludeEndpoint()
   @UseGuards(AuthGuard("google"))
   async googleAuthRedirect(@Req() req: Request) {
     const user = req.user;
-    console.log(user, "user========================\n");
-
     const token = await this.authService.login(user);
     return token;
-    return {
-      statusCode: 200,
-      message: "Google Authentication successful.",
-      // user,
-      user: token,
-    };
   }
 
   // if client is sending the token directly to the server then this route can be used. It will create new use if not exists.
@@ -74,6 +68,34 @@ export class AuthController {
   @ApiExcludeEndpoint()
   async profile(@Req() req: Request) {
     const user = req.user;
+    return user;
+  }
+
+  @Post("android/login")
+  @ApiBody({ type: AuthRegisterDto })
+  @ApiResponse({ status: 201, description: "User logged in successfully" })
+  @ApiResponse({ status: 401, description: "Invalid token" })
+  async register(
+    @Body()
+    body: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      profilePicUrl: string;
+    },
+  ) {
+    if (
+      !body.email ||
+      !body.firstName ||
+      !body.lastName ||
+      !body.email.includes("@") ||
+      !body.email.includes(".") ||
+      body.email.length < 5 ||
+      body.firstName.length > 1
+    ) {
+      throw new UnauthorizedException("Invalid User Data");
+    }
+    const user = await this.authService.login(body);
     return user;
   }
 }
