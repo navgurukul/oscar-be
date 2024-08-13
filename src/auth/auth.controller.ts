@@ -84,15 +84,10 @@ export class AuthController {
       profilePicUrl: string;
     },
   ) {
-    if (
-      !body.email ||
-      !body.firstName ||
-      !body.lastName ||
-      !body.email.includes("@") ||
-      !body.email.includes(".") ||
-      body.email.length < 5 ||
-      body.firstName.length > 1
-    ) {
+    // if (!body.email || !body.firstName || !body.lastName || !body.profilePicUrl || !body.email.includes("@") || !body.email.includes(".") || body.email.length < 5 || body.firstName.le) {
+    //   throw new UnauthorizedException("Invalid User Data");
+    // }
+    if(body.email == "" || body.firstName == "" || body.lastName == "" || body.profilePicUrl == ""){
       throw new UnauthorizedException("Invalid User Data");
     }
     const user = await this.authService.login(body);
