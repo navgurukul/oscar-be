@@ -19,7 +19,7 @@ import { LoggerMiddleware } from "./middleware/logger.middleware";
     ThrottlerModule.forRoot([
       {
         ttl: 5 * 60000, // 5 minutes
-        limit: 50, // 50 requests
+        limit: 100, // 50 requests
       },
     ]),
     DatabaseModule,
