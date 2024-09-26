@@ -95,6 +95,7 @@ model Transcriptions {
   textFileUrl     String?
   s3AssessKey     String? // This is the new column
   transcribedText String?  @db.Text
+  userTextInput    String?  @db.Text
   flag            Flag     @default(DB)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
