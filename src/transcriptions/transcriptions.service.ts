@@ -75,7 +75,7 @@ export class TranscriptionsService {
         id: element.id,
         userId: element.userId,
         transcribedText: element.transcribedText,
-        userTextInput: element.userTextInput,
+        userTextInput: userTextInput,
         createdAt: element.createdAt,
         updatedAt: element.updatedAt,
       };
@@ -107,7 +107,7 @@ export class TranscriptionsService {
         id: data.id,
         userId: data.userId,
         transcribedText: data.transcribedText,
-        userTextInput: data.userTextInput,
+        userTextInput: userTextInput,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       };
