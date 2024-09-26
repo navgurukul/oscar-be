@@ -82,7 +82,7 @@ export class TranscriptionsController {
     createTranscriptionDto.flag = flag;
 
     createTranscriptionDto.transcribedText = JSON.stringify(text_string);
-    createTranscriptionDto.userTextInput = text_string;
+    createTranscriptionDto.userTextInput = req.body?.userTextInput ? req.body.userTextInput : null;
 
     //
     if (megabytes > 1.5) {
