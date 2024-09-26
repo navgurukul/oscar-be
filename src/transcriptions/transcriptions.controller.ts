@@ -53,6 +53,7 @@ export class TranscriptionsController {
       type: "object",
       properties: {
         transcribedText: { type: "string" },
+        userTextInput: { type: "string" },
       },
       required: ["transcribedText"],
     },
@@ -81,6 +82,7 @@ export class TranscriptionsController {
     createTranscriptionDto.flag = flag;
 
     createTranscriptionDto.transcribedText = JSON.stringify(text_string);
+    createTranscriptionDto.userTextInput = text_string;
 
     //
     if (megabytes > 1.5) {
@@ -94,6 +96,7 @@ export class TranscriptionsController {
       delete createTranscriptionDto.transcribedText;
     }
 
+    
     const createResult = await this.transcriptionsService.create(
       createTranscriptionDto,
       userId,

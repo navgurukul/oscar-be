@@ -8,6 +8,11 @@ class CreateTranscriptionDto {
   @IsNotEmpty()
   @IsString()
   transcribedText: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  userTextInput: string;
 }
 
 class UpdateTranscriptionDto {

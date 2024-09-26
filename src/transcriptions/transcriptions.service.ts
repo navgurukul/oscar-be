@@ -70,10 +70,12 @@ export class TranscriptionsService {
 
     for (const element of data) {
       let transcribedText = element.transcribedText;
+      let userTextInput = element.userTextInput ? element.userTextInput : null;
       const repObj = {
         id: element.id,
         userId: element.userId,
         transcribedText: element.transcribedText,
+        userTextInput: element.userTextInput,
         createdAt: element.createdAt,
         updatedAt: element.updatedAt,
       };
@@ -100,10 +102,12 @@ export class TranscriptionsService {
         throw new NotFoundException(`Transcription not found`);
       }
       let transcribedText = data.transcribedText;
+      let userTextInput = data.userTextInput ? data.userTextInput : null;
       const repObj = {
         id: data.id,
         userId: data.userId,
         transcribedText: data.transcribedText,
+        userTextInput: data.userTextInput,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       };
