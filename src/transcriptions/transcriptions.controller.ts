@@ -66,9 +66,13 @@ export class TranscriptionsController {
   ) {
     const user = req.user as any;
     const userId = user.id;
-    const { transcribedText } = req.body;
-    if (transcribedText?.length < 10 || !transcribedText) {
-      throw new BadRequestException("Data not provided or too short");
+    
+    const { transcribedText, userTextInput } = req.body;
+    if (!transcribedText || transcribedText.length == 0) {
+      throw new BadRequestException("Transcribed text is required");
+    }
+    if (!userTextInput || userTextInput.length == 0) {
+      throw new BadRequestException("User text input is required");
     }
     const text_string = req.body.transcribedText;
 
@@ -82,7 +86,9 @@ export class TranscriptionsController {
     createTranscriptionDto.flag = flag;
 
     createTranscriptionDto.transcribedText = JSON.stringify(text_string);
-    createTranscriptionDto.userTextInput = req.body?.userTextInput ? req.body.userTextInput : null;
+    createTranscriptionDto.userTextInput = req.body?.userTextInput
+      ? req.body.userTextInput
+      : null;
 
     //
     if (megabytes > 1.5) {
@@ -96,7 +102,6 @@ export class TranscriptionsController {
       delete createTranscriptionDto.transcribedText;
     }
 
-    
     const createResult = await this.transcriptionsService.create(
       createTranscriptionDto,
       userId,
