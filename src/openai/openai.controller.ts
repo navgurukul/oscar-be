@@ -25,7 +25,7 @@ export class OpenaiController {
     @ApiResponse({ status: 429, description: "To many request or daily quota exceed" })
     @ApiResponse({ status: 401, description: "Unauthorized" })
     @ApiResponse({ status: 500, description: "Internal Server Error." })
-    async optimizeText(@Req() req: Request, @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput): Promise<{ output: string }> {
+    async optimizeText(@Req() req: Request, @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput): Promise<{ capture: any } | { output: string }> {
         const user = req.user as any;
         const userId = user.id;
         
@@ -33,9 +33,9 @@ export class OpenaiController {
         if (!user_input || user_input.length === 0) {
            throw new BadRequestException("Please provide a text to optimize.");
         }
-        if (!device_tag) {
-            throw new BadRequestException("Please provide a device tag.");
-        }
+        // if (!device_tag) {
+        //     throw new BadRequestException("Please provide a device tag.");
+        // }
         
         try {
             const output = await this.openaiService.optimizeText(user_input);
@@ -47,7 +47,7 @@ export class OpenaiController {
             createTranscriptionDto.flag = flag;
 
             createTranscriptionDto.transcribedText = JSON.stringify(output);
-            createTranscriptionDto.userTextInput = req.body?.user_input ? req.body.user_input : null;
+            createTranscriptionDto.userTextInput = user_input;
             let textFileUrl = null;
             let s3AssessKey = null;
 
@@ -67,28 +67,24 @@ export class OpenaiController {
                 userId,
                 s3AssessKey,
             );
-            return { output, ...capture };
+            return { capture };
         } catch (error) {
-            console.log(error, '----((error');
             return { output: `Error: ${(error as any).message}` };
         }
     }
 
     @Post("optimize-text2")
     @ApiBody({ type: PromptDto })
-    @ApiResponse({ status: 200, description: "transcription successfull" })
-    @ApiResponse({ status: 429, description: "To many request or daily quota exceed" })
+    @ApiResponse({ status: 200, description: "transcription successful" })
+    @ApiResponse({ status: 429, description: "Too many requests or daily quota exceeded" })
     @ApiResponse({ status: 401, description: "Not a valid token" })
     @ApiResponse({ status: 500, description: "Internal Server Error." })
-    async generateText2(@Body("user_input") user_input: string, @Body('device_tag') device_tag: string): Promise<{ output: string }> {
-        try {
-            if (Number(device_tag) !== 2) return { output: `Error: Invalid device tag` };
-            const output = await this.openaiService.optimizeText(user_input);
-            // output.status = 200;
-            return { output };
-        } catch (error) {
-            return { output: `Error: ${(error as any).message}` };
-        }
+    async generateText2(@Body("user_input") user_input: string, @Body('device_tag') device_tag: number): Promise<{ output: string, user_input: string, status: number }> {
+        
+        if (Number(device_tag) !== 2) return { output: `Error: Invalid device tag`, user_input, status: 400 };
+        const output = await this.openaiService.optimizeText(user_input);
+        return { output, user_input, status: 200 };
+
     }
 }
 

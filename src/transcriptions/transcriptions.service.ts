@@ -49,7 +49,11 @@ export class TranscriptionsService {
     }
   
     const payload = {
-      ...createTranscriptionDto,
+      textFileUrl: createTranscriptionDto.textFileUrl,
+      s3AssessKey: createTranscriptionDto.s3AssessKey,
+      flag: createTranscriptionDto.flag,
+      userTextInput: createTranscriptionDto.userTextInput,
+      transcribedText: createTranscriptionDto.transcribedText,
       user: {
         connect: { id: userId },
       },

@@ -5,10 +5,10 @@ class PromptDto {
   user_input: string;
 
   @ApiProperty()
-  device_tag: string;
+  device_tag: number;
 
   @ApiProperty()
-  record_time: string;
+  record_time: number;
 }
 
 export { PromptDto };

@@ -24,7 +24,10 @@ export class OpenaiService {
         messages: [
           {
             role: "system",
-            content: "You are a highly skilled and detail-oriented language assistant. Your role is to meticulously optimize text by correcting spelling and grammatical errors while preserving the original structure, meaning, and tone. Avoid rephrasing, paraphrasing, or omitting any part of the text unless explicitly instructed."
+            content: `You are a highly skilled and detail-oriented language assistant. 
+              Your role is to meticulously optimize text by correcting spelling and grammatical errors 
+              while preserving the original structure, meaning, and tone. Avoid rephrasing, paraphrasing, 
+              or omitting any part of the text unless explicitly instructed.`,
           },
           {
             role: "user", 
