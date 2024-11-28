@@ -75,15 +75,15 @@ export class OpenaiController {
 
     @Post("optimize-text2")
     @ApiBody({ type: PromptDto })
-    @ApiResponse({ status: 200, description: "transcription successful" })
+    @ApiResponse({ status: 200, description: "transcription generated successfully" })
     @ApiResponse({ status: 429, description: "Too many requests or daily quota exceeded" })
     @ApiResponse({ status: 401, description: "Not a valid token" })
     @ApiResponse({ status: 500, description: "Internal Server Error." })
-    async generateText2(@Body("user_input") user_input: string, @Body('device_tag') device_tag: number): Promise<{ output: string, user_input: string, status: number }> {
+    async generateText2(@Body("user_input") user_input: string, @Body('device_tag') device_tag: number): Promise<{ output: string, user_input: string }> {
         
-        if (Number(device_tag) !== 2) return { output: `Error: Invalid device tag`, user_input, status: 400 };
+        if (Number(device_tag) !== 2) throw new BadRequestException("Error: Invalid device tag");
         const output = await this.openaiService.optimizeText(user_input);
-        return { output, user_input, status: 200 };
+        return { output, user_input };
 
     }
 }
