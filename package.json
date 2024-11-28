@@ -35,6 +35,7 @@
     "google-auth-library": "^9.11.0",
     "helmet": "^7.1.0",
     "nest-standard-response": "^1.2.3",
+    "openai": "^4.73.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",

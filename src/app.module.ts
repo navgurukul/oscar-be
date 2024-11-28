@@ -9,6 +9,8 @@ import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { ConfigModule } from "@nestjs/config";
 import { LoggerMiddleware } from "./middleware/logger.middleware";
+import { OpenaiService } from './openai/openai.service';
+import { OpenaiController } from './openai/openai.controller';
 
 @Module({
   imports: [
@@ -33,7 +35,9 @@ import { LoggerMiddleware } from "./middleware/logger.middleware";
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    OpenaiService,
   ],
+  controllers: [OpenaiController],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
