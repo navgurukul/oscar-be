@@ -13,7 +13,7 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_SECRET || "mai-nhi-btaunga",
+      secret: process.env.JWT_SECRET_KEY || "mai-nhi-btaunga",
       signOptions: { expiresIn: "7d" },
     }),
     forwardRef(() => UsersModule),

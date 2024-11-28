@@ -40,23 +40,34 @@ export class TranscriptionsService {
     userId: number,
     Key: string,
   ) {
+    const userExists = await this.databaseService.user.findUnique({
+      where: { id: userId },
+    });
+  
+    if (!userExists) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+  
+    const payload = {
+      ...createTranscriptionDto,
+      user: {
+        connect: { id: userId },
+      },
+    };
+    
     try {
       const create = await this.databaseService.transcriptions.create({
-        data: {
-          ...createTranscriptionDto,
-          user: {
-            connect: { id: userId }, // Assuming `id` is the unique identifier for users
-          },
-        },
+        data: payload,
       });
       create["message"] = "Transcription created successfully";
       create["transcribedText"] = JSON.parse(create.transcribedText);
       return create;
     } catch (error) {
+      console.log(error, "---8**error");
       if (Key != undefined && Key != null && Key != "") {
         await this.deleteFileFromS3(Key);
       }
-      throw new InternalServerErrorException("Failed to create transcription");
+      throw new InternalServerErrorException("Failed to record transcription");
     }
   }
 
