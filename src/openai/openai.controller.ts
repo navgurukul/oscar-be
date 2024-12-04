@@ -25,10 +25,9 @@ export class OpenaiController {
     @ApiResponse({ status: 429, description: "To many request or daily quota exceed" })
     @ApiResponse({ status: 401, description: "Unauthorized" })
     @ApiResponse({ status: 500, description: "Internal Server Error." })
-    async optimizeText(@Req() req: Request, @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput): Promise<{ capture: any } | { output: string }> {
-        const user = req.user as any;
-        const userId = user.id;
-        
+    async optimizeText(@Req() req: Request, @Body() createTranscriptionDto: Prisma.TranscriptionsCreateInput): Promise<{ capture: any } | { output: string, user_input: string }> {
+        // const user = req.user as any;
+        // const userId = user.id;        
         const { user_input, device_tag, record_time } = req.body;
         if (!user_input || user_input.length === 0) {
            throw new BadRequestException("Please provide a text to optimize.");
@@ -39,37 +38,9 @@ export class OpenaiController {
         
         try {
             const output = await this.openaiService.optimizeText(user_input);
-
-            const bytes = new TextEncoder().encode(output).length;
-            const megabytes = bytes / (1024 * 1024);
-            
-            let flag: Flag = "DB";
-            createTranscriptionDto.flag = flag;
-
-            createTranscriptionDto.transcribedText = JSON.stringify(output);
-            createTranscriptionDto.userTextInput = user_input;
-            let textFileUrl = null;
-            let s3AssessKey = null;
-
-            if (megabytes > 1.5) {
-                const uploadResult = await this.transcriptionsService.fileUpload(output);
-                textFileUrl = uploadResult.url;
-                console.log(uploadResult, 'uploadResult');
-                createTranscriptionDto.textFileUrl = textFileUrl;
-                createTranscriptionDto.s3AssessKey = uploadResult.Key;
-                s3AssessKey = uploadResult.Key;
-                createTranscriptionDto.flag = "S3";
-                delete createTranscriptionDto.transcribedText;
-            }
-            
-            const capture = await this.transcriptionsService.create(
-                createTranscriptionDto,
-                userId,
-                s3AssessKey,
-            );
-            return { capture };
+            return { user_input, output };
         } catch (error) {
-            return { output: `Error: ${(error as any).message}` };
+            return { user_input, output: `Error: ${(error as any).message}` };
         }
     }
 
