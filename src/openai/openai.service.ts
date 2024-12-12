@@ -17,30 +17,27 @@ export class OpenaiService {
 
   public async optimizeText(input: string): Promise<string> {
     try {
-      const command = process.env.PROMPT + input;
 
       const response = await this.openai.chat.completions.create({
         model: process.env.OPEN_AI_MODEL || "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
-            content: `You are a highly skilled and detail-oriented language assistant. 
-              Your role is to meticulously optimize text by correcting spelling and grammatical errors 
-              while preserving the original structure, meaning, and tone. Avoid rephrasing, paraphrasing, 
-              or omitting any part of the text unless explicitly instructed.`,
+            content: process.env.PROMPT,
           },
           {
-            role: "user", 
-            content: command
+            role: "user",
+            content: input
           }
         ],
-        max_tokens: 100,
+        max_tokens: 500,
         temperature: 0.5,
         top_p: 1,
       });
 
+      console.log(response.choices[0]?.finish_reason, '<--finish_reason');
       return response.choices[0]?.message?.content || "No response text available.";
-      
+
     } catch (error) {
       console.error("Error ------", error);
       this.handleOpenAIError(error);
