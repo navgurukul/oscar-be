@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
+import { InputType, TranscriptionStrategy, TRANSCRIPTION_STRATEGIES, classifyInput } from "./strategy/prompt.matrix";
 import { TranscriptionsService } from "src/transcriptions/transcriptions.service";
+require('dotenv').config();
 
 @Injectable()
 export class OpenaiService {
@@ -15,55 +17,39 @@ export class OpenaiService {
     });
   }
 
-  public async optimizeText(input: string): Promise<string> {
-    try {
+  async optimizeText(user_input: string): Promise<{ output: string; }> {
+    const strategy = classifyInput(user_input);
+    // console.log(strategy, 'strategy');
 
-      const response = await this.openai.chat.completions.create({
-        model: process.env.OPEN_AI_MODEL || "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: process.env.PROMPT,
-          },
-          {
-            role: "user",
-            content: input
-          }
-        ],
-        max_tokens: 500,
-        temperature: 0.5,
-        top_p: 1,
-      });
-
-      console.log(response.choices[0]?.finish_reason, '<--finish_reason');
-      return response.choices[0]?.message?.content || "No response text available.";
-
-    } catch (error) {
-      console.error("Error ------", error);
-      this.handleOpenAIError(error);
-    }
+    const response = await this.openai.chat.completions.create({
+      model: process.env.OPEN_AI_MODEL || "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: strategy.prompt
+        },
+        {
+          role: "user",
+          content: user_input
+        }
+      ],
+      max_tokens: strategy.maxTokens,
+      temperature: strategy.temperature
+    });
+    // console.log(response, '--------response----------');
+    const output = await this.parseTranscription(response.choices[0]?.message?.content);
+    return output.transcript;
   }
 
-  private handleOpenAIError(error: any): void {
-    if (error.response) {
-      const { status, data } = error.response;
-      this.logger.error(`OpenAI API Error: ${status} - ${data.error?.message}`);
-      switch (status) {
-        case 401:
-          throw new Error("Invalid API key.");
-        case 429:
-          throw new Error("Rate limit exceeded. Try again later.");
-        case 500:
-          throw new Error("OpenAI server error. Please retry.");
-        default:
-          throw new Error(data.error?.message || "OpenAI API error.");
-      }
-    } else if (error.request) {
-      this.logger.error("No response from OpenAI API.");
-      throw new Error("OpenAI API is unreachable. Try again later.");
-    } else {
-      this.logger.error(`Unexpected error: ${error.message}`);
-      throw new Error("An unexpected error occurred.");
-    }
+  private parseTranscription(transcription: string): any {
+    const parsedTrans = JSON.parse(transcription);
+    console.log(parsedTrans, 'parsed-content');
+    const result = {
+      title: parsedTrans.title || null,
+      transcript: parsedTrans.transcript,
+    };
+    return result;
   }
+
+
 }
