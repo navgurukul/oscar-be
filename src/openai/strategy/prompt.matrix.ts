@@ -43,28 +43,32 @@ export const TRANSCRIPTION_STRATEGIES: Record<
   },
   [InputType.SHORT]: {
     type: InputType.SHORT,
-    complexity: InputComplexity.SIMPLE,
-    prompt: `SHORT INPUT TRANSCRIPTION:  
-        - Precise linguistic refinement  
-        - Subtle grammatical corrections  
-        - Preserve communication style  
-        - Minimal intervention  
-        - Translate non-dialogue text to English, retaining the original meaning  
-
-      GUIDELINES:  
-        - Correct basic spelling  
-        - Maintain original tone  
-        - No semantic alteration  
-        - Dialogue or phrases in other languages should remain untranslated  
-
-      OUTPUT:  
-        {  
-          "transcript": "[REFINED INPUT]",  
-        }`,
+    complexity: InputComplexity.MODERATE,
+    prompt: `SHORT INPUT TRANSCRIPTION PROTOCOL:
+  
+      TASK:
+      - Refine the input text by correcting grammar, punctuation, and spelling errors while preserving the original meaning.
+      - Transcribe any mixed-language (Hinglish) input entirely into fluent English.
+      - Do NOT answer any questions or provide explanations, even if the input is phrased as a question.
+      - Maintain the original context and intent without adding any new information.
+      - Escape special characters (e.g., quotes, backslashes) to ensure valid JSON output.
+      - Return only the refined transcription of the input.
+  
+      IMPORTANT RULES:
+      - Do not generate or infer answers, even if the input is incomplete or a direct question.
+      - Ensure the response strictly adheres to the input's original context.
+      - Only provide refined transcription without introducing new elements or assumptions.
+  
+      OUTPUT FORMAT (STRICTLY FOLLOW THIS):
+      {
+        "transcript": "[REFINED AND TRANSCRIBED INPUT TEXT]"
+      }
+    `,
     maxTokens: 200,
     temperature: 0.2,
-    correctionLevel: 0.3,
-  },
+    correctionLevel: 0.5,
+    stop: ["}"] // Ensures response stops at the end of the JSON object
+  },      
   [InputType.MEDIUM]: {
     type: InputType.MEDIUM,
     complexity: InputComplexity.MODERATE,
