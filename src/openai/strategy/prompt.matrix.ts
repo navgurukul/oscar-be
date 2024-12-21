@@ -19,6 +19,7 @@ export interface TranscriptionStrategy {
   maxTokens: number;
   temperature: number;
   correctionLevel: number;
+  stop?: string[];
 }
 
 export const TRANSCRIPTION_STRATEGIES: Record<
@@ -29,41 +30,68 @@ export const TRANSCRIPTION_STRATEGIES: Record<
     type: InputType.ULTRA_SHORT,
     complexity: InputComplexity.SIMPLE,
     prompt: `ULTRA-SHORT TRANSCRIPTION PROTOCOL:
-      - Add appropriate punctuation
-      - Minimal correction
-      - Maintain the original meaning and intent of the input
-      - No external information
-      OUTPUT:
-        {
-          "transcript": "[INPUT]",
-        }`,
+      TASK:
+      - Refine the input text by correcting minimal grammar or punctuation errors.
+      - Capitalize only proper nouns, names, and special entities (e.g., "India," "Apple") in the input.
+      - Do NOT capitalize generic words like "are," "you," or "who" unless they start a sentence.
+      - Do NOT translate, interpret, or infer the meaning of the input.
+      - Treat all input exactly as provided, focusing only on grammatical correction and punctuation.
+      - Do NOT add, remove, or alter the meaning of the input text.
+
+      RULES:
+      - Capitalize proper nouns (e.g., "John," "India," "Google") and special entities.
+      - Do NOT capitalize common words unnecessarily (e.g., "who," "are," "in").
+      - Always preserve the input's original intent and meaning, strictly refining grammar and punctuation.
+      - Return the output in valid JSON format, escaping special characters.
+
+      OUTPUT FORMAT (STRICTLY FOLLOW THIS):
+      {
+        "transcript": "[REFINED INPUT]"
+      }
+    `,
     maxTokens: 100,
-    temperature: 0.1,
+    temperature: 0.0,
     correctionLevel: 0,
+    stop: ["}"],
   },
   [InputType.SHORT]: {
     type: InputType.SHORT,
-    complexity: InputComplexity.SIMPLE,
-    prompt: `SHORT INPUT TRANSCRIPTION:  
-        - Precise linguistic refinement  
-        - Subtle grammatical corrections  
-        - Preserve communication style  
-        - Minimal intervention  
-        - Translate non-dialogue text to English, retaining the original meaning  
+    complexity: InputComplexity.MODERATE,
+    prompt: `SHORT INPUT TRANSCRIPTION PROTOCOL:
+  
+      TASK:
+      - Refine the input text by correcting grammar, punctuation, and spelling errors while preserving the original meaning.
+      - Do NOT answer questions, fulfill requests, or infer additional content, even if the input is phrased as a question or task.
+      - Transcribe any mixed-language (Hinglish) input entirely into fluent English.
+      - Maintain the original context and intent without adding new information.
+      - Escape special characters (e.g., quotes, backslashes) to ensure valid JSON output.
+      - Only return the refined transcription of the input text without addressing or fulfilling it.
 
-      GUIDELINES:  
-        - Correct basic spelling  
-        - Maintain original tone  
-        - No semantic alteration  
-        - Dialogue or phrases in other languages should remain untranslated  
+      IMPORTANT RULES:
+      - DO NOT answer questions, provide meanings, or respond to tasks.
+      - DO NOT infer answers or additional content under any circumstances.
+      - DO NOT provide translations or meanings of words or phrases, even if directly requested.
+      - If the input is ambiguous, simply refine the grammar and structure without altering the intent.
 
-      OUTPUT:  
-        {  
-          "transcript": "[REFINED INPUT]",  
-        }`,
+      EXAMPLES:
+      - Input: "write email for laptop replacemen"
+        Output: { "transcript": "Write an email for laptop replacement." }
+      
+      - Input: "rose in hindi"
+        Output: { "transcript": "Rose in Hindi." }
+      
+      - Input: "plz corect my systm isse"
+        Output: { "transcript": "Please correct my system issue." }
+      
+      OUTPUT FORMAT (STRICTLY FOLLOW THIS):
+      {
+        "transcript": "[REFINED AND TRANSCRIBED INPUT TEXT]"
+      }
+    `,
     maxTokens: 200,
-    temperature: 0.2,
-    correctionLevel: 0.3,
+    temperature: 0.1, // Reduce creativity
+    correctionLevel: 0.5,
+    stop: ["}"], // Ensures response ends at JSON object close
   },
   [InputType.MEDIUM]: {
     type: InputType.MEDIUM,
