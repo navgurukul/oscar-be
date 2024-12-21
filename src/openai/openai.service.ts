@@ -19,7 +19,7 @@ export class OpenaiService {
 
   async optimizeText(user_input: string): Promise<{ output: string; }> {
     const strategy = classifyInput(user_input);
-    console.log(strategy, 'strategy');
+    // console.log(strategy, 'strategy');
 
     const response = await this.openai.chat.completions.create({
       model: process.env.OPEN_AI_MODEL || "gpt-3.5-turbo",
@@ -36,7 +36,7 @@ export class OpenaiService {
       max_tokens: strategy.maxTokens,
       temperature: strategy.temperature
     });
-    console.log(response, '--------response----------');
+    // console.log(response, '--------response----------');
     const output = await this.parseTranscription(response.choices[0]?.message?.content);
     return output.transcript;
   }
