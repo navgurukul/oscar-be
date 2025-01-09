@@ -33,7 +33,13 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
       request.user = user;
     } catch (error) {
       console.error("JWT verification error:", error);
-      throw new UnauthorizedException("Invalid token");
+      if ((error as any).name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Token expired. Please log in again.');
+      } else if ((error as any).name === 'JsonWebTokenError') {
+        throw new UnauthorizedException('Invalid token. Please log in again.');
+      } else {
+        throw new UnauthorizedException('Authentication failed. Please log in again.');
+      }
     }
 
     return true;
