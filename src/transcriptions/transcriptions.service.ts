@@ -3,7 +3,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
-import { Flag, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { DatabaseService } from "src/database/database.service";
 import { v4 as uuidv4 } from "uuid"; // For generating unique file names
@@ -15,7 +15,6 @@ import {
   DeleteObjectCommandOutput,
   GetObjectCommand,
   PutObjectCommand,
-  PutObjectCommandOutput,
   S3Client,
 } from "@aws-sdk/client-s3";
 import path from "path";
@@ -43,22 +42,23 @@ export class TranscriptionsService {
     const userExists = await this.databaseService.user.findUnique({
       where: { id: userId },
     });
-  
+
     if (!userExists) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
-  
+
     const payload = {
       textFileUrl: createTranscriptionDto.textFileUrl,
       s3AssessKey: createTranscriptionDto.s3AssessKey,
       flag: createTranscriptionDto.flag,
       userTextInput: createTranscriptionDto.userTextInput,
       transcribedText: createTranscriptionDto.transcribedText,
+      title: createTranscriptionDto.title,
       user: {
         connect: { id: userId },
       },
     };
-    
+
     try {
       const create = await this.databaseService.transcriptions.create({
         data: payload,

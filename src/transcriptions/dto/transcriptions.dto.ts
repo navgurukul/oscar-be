@@ -13,6 +13,11 @@ class CreateTranscriptionDto {
   @IsOptional()
   @IsString()
   userTextInput: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsString()
+  title: string;
 }
 
 class UpdateTranscriptionDto {

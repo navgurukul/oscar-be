@@ -54,6 +54,7 @@ export class TranscriptionsController {
       properties: {
         transcribedText: { type: "string" },
         userTextInput: { type: "string" },
+        title: { type: "string" },
       },
       required: ["transcribedText"],
     },
