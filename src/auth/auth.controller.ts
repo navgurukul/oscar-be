@@ -47,10 +47,8 @@ export class AuthController {
   @ApiResponse({ status: 201, description: "User logged in successfully" })
   @ApiResponse({ status: 401, description: "Invalid token" })
   async googleCallback(@Body() body: { idToken: string }, @Req() req: Request) {
-    // console.log(req.headers['user-agent'],'I want to see the body');
     let agent = req.headers["user-agent"];
     let isMobile = agent.toLocaleLowerCase().includes("mobile");
-    console.log(isMobile, "isMobile========================\n");
 
     const user = await this.authService.validateGoogleToken(
       body.idToken,
@@ -84,12 +82,7 @@ export class AuthController {
       profilePicUrl: string;
     },
   ) {
-    // if (!body.email || !body.firstName || !body.lastName || !body.profilePicUrl || !body.email.includes("@") || !body.email.includes(".") || body.email.length < 5 || body.firstName.le) {
-    //   throw new UnauthorizedException("Invalid User Data");
-    // }
-    // if (body.email == "" || body.firstName) {
-    //   throw new UnauthorizedException("Invalid User Data");
-    // }
+
     const user = await this.authService.login(body);
     return user;
   }

@@ -44,14 +44,11 @@ export class AuthService {
         user = createUser;
       }
 
-      const create_jwt_token = this.jwtService.sign({
-        email: user.email,
-        userId: user.id,
-      });
+      const generateJwtToken = this.generateJwtToken(user);
 
       return {
         user,
-        token: create_jwt_token,
+        token: generateJwtToken,
       };
     } catch (error) {
       console.error("Error verifying Google ID token:", error);
@@ -110,14 +107,19 @@ export class AuthService {
         ).email,
         userId: user.id,
       };
+      const generateJwtToken = this.generateJwtToken(user);
       const response = {
         user,
-        token: this.jwtService.sign(payload),
+        token: generateJwtToken,
       };
       return response;
     } catch (error) {
       throw new UnauthorizedException("Invalid token");
     }
+  }
+
+  generateJwtToken(user: any) {
+    return this.jwtService.sign({ userId: user.id, email: user.email });
   }
 
   validateToken(token: string) {
