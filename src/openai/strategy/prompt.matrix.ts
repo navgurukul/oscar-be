@@ -49,6 +49,7 @@ export const TRANSCRIPTION_STRATEGIES: Record<
 
       OUTPUT FORMAT (STRICTLY FOLLOW THIS):
       {
+        "title": "[GENERATED TITLE]",
         "transcript": "[REFINED AND TRANSLATED INPUT]"
       }
     `,
@@ -99,6 +100,7 @@ export const TRANSCRIPTION_STRATEGIES: Record<
 
       OUTPUT FORMAT (STRICTLY FOLLOW THIS):
       {
+        "title": "[GENERATED TITLE]",
         "transcript": "[REFINED AND TRANSCRIBED INPUT TEXT IN ENGLISH]"
       }
     `,
@@ -176,6 +178,7 @@ export const TRANSCRIPTION_STRATEGIES: Record<
 
       OUTPUT FORMAT:
         {
+          "title": "[GENERATED TITLE]",
           "transcript": "[TEXT IN ENGLISH]"
         }`,
     maxTokens: 400,

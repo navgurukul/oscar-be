@@ -38,7 +38,7 @@ export class OpenaiService {
     });
     // console.log(response, '--------response----------');
     const output = await this.parseTranscription(response.choices[0]?.message?.content);
-    return output.transcript;
+    return output;
   }
 
   private parseTranscription(transcription: string): any {
