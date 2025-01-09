@@ -94,6 +94,7 @@ model Transcriptions {
   userId          Int
   textFileUrl     String?
   s3AssessKey     String? // This is the new column
+  title           String?
   transcribedText String?  @db.Text
   userTextInput    String?  @db.Text
   flag            Flag     @default(DB)
