@@ -91,6 +91,7 @@ export class TranscriptionsService {
         userId: element.userId,
         transcribedText: element.transcribedText,
         userTextInput: userTextInput,
+        title: element?.title || null,
         createdAt: element.createdAt,
         updatedAt: element.updatedAt,
       };
@@ -123,6 +124,7 @@ export class TranscriptionsService {
         userId: data.userId,
         transcribedText: data.transcribedText,
         userTextInput: userTextInput,
+        title: data?.title || null,
         createdAt: data.createdAt,
         updatedAt: data.updatedAt,
       };
