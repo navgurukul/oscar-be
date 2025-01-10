@@ -54,7 +54,7 @@ export class OpenaiController {
         
         if (Number(device_tag) !== 2) throw new BadRequestException("Error: Invalid device tag");
         const output = await this.openaiService.optimizeText(user_input);
-        return { output, user_input };
+        return { output:output.transcript, user_input };
 
     }
 }
