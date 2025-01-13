@@ -38,7 +38,7 @@ export class OpenaiController {
         
         try {
             const output = await this.openaiService.optimizeText(user_input);
-            return { user_input, output };
+            return { user_input, title:output.title, transcript: output.transcript };
         } catch (error) {
             return { user_input, output: `Error: ${(error as any).message}` };
         }
